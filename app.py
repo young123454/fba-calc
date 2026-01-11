@@ -25,7 +25,7 @@ def get_tenant_access_token():
 # --- 2. 顶部输入区 ---
 st.title("📦 WY FBA 运费记录与优化")
 
-sku = st.text_input("请输入 SKU (必填)", placeholder="例如：SKU-2026-001")
+sku = st.text_input("请输入 SKU (选填)", placeholder="例如：SKU-2026-001")
 
 with st.container():
     col_w, col_l = st.columns(2)
