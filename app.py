@@ -2,7 +2,7 @@ import streamlit as st
 import math
 
 # 设置页面样式
-st.set_page_config(page_title="FBA 运费与高度优化工具", layout="centered")
+st.set_page_config(page_title="WEIYUE FBA 运费与高度优化工具", layout="centered")
 
 # --- 侧边栏：输入产品原始参数 ---
 with st.sidebar:
