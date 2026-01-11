@@ -4,7 +4,7 @@ import requests
 import json
 
 # 设置页面，针对手机端优化布局
-st.set_page_config(page_title="WY—FBA配送费测试工具", layout="centered")
+st.set_page_config(page_title="WY FBA配送费测试工具", layout="centered")
 
 # --- 1. 获取 Secrets 配置 ---
 APP_ID = st.secrets.get("FEISHU_APP_ID")
