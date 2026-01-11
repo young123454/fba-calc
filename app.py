@@ -43,10 +43,10 @@ if is_small:
     fee = fees[idx]
     upper_weight = thresholds[idx]
 else:
-    if bill_weight > 5:
-        extra_units = math.ceil(max(0, bill_weight - 5) / 0.5)
+    if bill_weight > 3:
+        extra_units = math.ceil(max(0, bill_weight - 3) / 0.5)
         fee = extra_units * 0.16 + 7.61
-        upper_weight = 5 + (extra_units * 0.5)
+        upper_weight = 3 + (extra_units * 0.5)
     else:
         thresholds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
         fees = [4.3, 4.5, 4.72, 5.17, 5.87, 6.04, 6.14, 6.25, 6.6, 6.72, 6.77, 6.9]
