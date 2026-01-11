@@ -12,7 +12,7 @@ with st.sidebar:
     w_cm = st.number_input("宽度 (cm)", value=29.5, step=0.1)
     h_cm = st.number_input("高度 (cm)", value=1.9, step=0.1)
 
-st.title("📦 FBA 运费与高度计算专家")
+st.title("📦 WEIYUE FBA 运费与高度优化工具")
 
 # --- 核心计算逻辑 ---
 
