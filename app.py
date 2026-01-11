@@ -1,11 +1,31 @@
 import streamlit as st
 import math
+import requests
+import json
 
 # 设置页面，针对手机端优化布局
-st.set_page_config(page_title="FBA优化工具", layout="centered")
+st.set_page_config(page_title="FBA优化-飞书版", layout="centered")
 
-# --- 1. 顶部输入区 (手机端直接可见) ---
-st.title("📦 WY FBA 运费与高度优化工具")
+# --- 1. 获取 Secrets 配置 ---
+APP_ID = st.secrets.get("FEISHU_APP_ID")
+APP_SECRET = st.secrets.get("FEISHU_APP_SECRET")
+APP_TOKEN = st.secrets.get("FEISHU_APP_TOKEN")
+TABLE_ID = st.secrets.get("FEISHU_TABLE_ID")
+
+def get_tenant_access_token():
+    url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+    payload = json.dumps({"app_id": APP_ID, "app_secret": APP_SECRET})
+    headers = {'Content-Type': 'application/json'}
+    try:
+        response = requests.post(url, headers=headers, data=payload)
+        return response.json().get("tenant_access_token")
+    except:
+        return None
+
+# --- 2. 顶部输入区 ---
+st.title("📦 WY FBA 运费记录与优化")
+
+sku = st.text_input("请输入 SKU (必填)", placeholder="例如：SKU-2026-001")
 
 with st.container():
     col_w, col_l = st.columns(2)
@@ -20,49 +40,45 @@ with st.container():
     with col_h:
         h_cm = st.number_input("高度 (cm)", value=1.9, step=0.1)
 
-# --- 2. 核心逻辑计算 ---
+# --- 3. 核心计算逻辑 ---
 w_lb = weight_g / 453.5924
 dims_in = sorted([l_cm/2.54, w_cm/2.54, h_cm/2.54], reverse=True)
-v_factor = 139 * (2.54**3) # 约 2277.8
+v_factor = 139 * (2.54**3)
 vol_weight = (l_cm * w_cm * h_cm) / v_factor
 bill_weight = max(w_lb, vol_weight)
 
-# 尺寸判定
+# 判定小号/大号
 is_small = (dims_in[0] <= 15 and dims_in[1] <= 12 and dims_in[2] <= 0.75 and w_lb <= 1)
 size_tier = "小号标准尺寸" if is_small else "大号标准尺寸"
 
-# 费用查找与档位上限捕捉
 fee = 0.0
 upper_weight = 0.0
 
 if is_small:
-    # 小号标准档位
     thresholds = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]
     fees = [3.51, 3.54, 3.59, 3.69, 3.91, 4.09, 4.20, 4.25]
     idx = next((i for i, t in enumerate(thresholds) if bill_weight <= t), len(thresholds)-1)
     fee = fees[idx]
     upper_weight = thresholds[idx]
 else:
-    # 大号标准档位逻辑
+    # 大号标准尺寸：大于 3 磅用公式，不保留 5 磅特殊值
     if bill_weight > 3.0:
-        # 超过 3 磅统一按公式：基础费 6.9 + 每 0.5lb 加价 0.16
         extra_units = math.ceil(max(0, bill_weight - 3.0) / 0.5)
         fee = extra_units * 0.16 + 6.9 
         upper_weight = 3.0 + (extra_units * 0.5)
     else:
-        # 3.0 磅及以内的档位查找
         thresholds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
         fees = [4.3, 4.5, 4.72, 5.17, 5.87, 6.04, 6.14, 6.25, 6.6, 6.72, 6.77, 6.9]
         idx = next((i for i, t in enumerate(thresholds) if bill_weight <= t), len(thresholds)-1)
         fee = fees[idx]
         upper_weight = thresholds[idx]
 
-# --- 3. 核心结论区 (紧跟输入框) ---
+# --- 4. 结论展示 ---
 st.divider()
 max_h_calc = (upper_weight * v_factor) / (l_cm * w_cm)
 final_max_h = min(1.9, max_h_calc) if is_small else max_h_calc
 
-# 使用绿色背景卡片突出显示高度建议
+# 绿色结论卡片
 st.markdown(f"""
 <div style="background-color:#d4edda; padding:15px; border-radius:10px; border-left:5px solid #28a745;">
     <p style="color:#155724; margin:0; font-size:14px;">📏 当前运费档位最大允许高度：</p>
@@ -71,16 +87,36 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 st.caption(f"在该高度内，运费维持在 **${fee:.2f}** 不变")
 
-# --- 4. 判定详细结果 ---
+# --- 5. 判定结果与保存按钮 ---
 col1, col2 = st.columns(2)
 with col1:
     st.metric("判定等级", size_tier)
 with col2:
     st.metric("FBA 配送费", f"${fee:.2f}")
 
-st.info(f"计费重量: {bill_weight:.3f} lb | 依据: {'实重' if w_lb > vol_weight else '体积重'}")
-
-with st.expander("查看详细技术参数"):
-    st.write(f"- 实重: {w_lb:.4f} lb")
-    st.write(f"- 体积重: {vol_weight:.4f} lb")
-    st.write(f"- 匹配档位上限: {upper_weight} lb")
+if st.button("💾 保存数据到飞书多维表", disabled=not sku):
+    token = get_tenant_access_token()
+    if not token:
+        st.error("获取飞書授权失败，请检查 Secrets 配置。")
+    else:
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{APP_TOKEN}/tables/{TABLE_ID}/records"
+        headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
+        payload = json.dumps({
+            "fields": {
+                "SKU": sku,
+                "判定等级": size_tier,
+                "配送费": fee,
+                "最大高度(cm)": round(final_max_h, 2),
+                "当前重量(g)": weight_g,
+                "长度(cm)": l_cm,
+                "宽度(cm)": w_cm
+            }
+        })
+        response = requests.post(url, headers=headers, data=payload)
+        if response.json().get("code") == 0:
+            st.success("✅ 数据已保存！")
+            st.balloons()
+        else:
+            st.error(f"保存失败：{response.json().get('msg')}")
+elif not sku:
+    st.warning("⚠️ 请输入 SKU 以激活保存功能。")
