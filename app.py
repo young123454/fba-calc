@@ -55,7 +55,7 @@ st.subheader("📏 包装规格")
 with st.container():
     col_w, col_l = st.columns(2)
     with col_w:
-        weight_g = st.number_input("实重 (g)", value=460.0, step=10.0)
+        weight_g = st.number_input("实重 (g)", value=450.0, step=10.0)
     with col_l:
         l_cm = st.number_input("最长边 (cm)", value=37.5, step=0.1)
     
