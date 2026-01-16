@@ -163,7 +163,6 @@ if st.button("🚀 同步数据至飞书多维表格", use_container_width=True,
                 "长度(cm)": l_cm, 
                 "宽度(cm)": w_cm, 
                 "售价区间": clean_price_tier,
-                "计费重量上限(lb)": upper_weight
             }
         })
         try:
