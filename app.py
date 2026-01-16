@@ -5,7 +5,7 @@ import json
 
 # --- 页面基础配置 ---
 st.set_page_config(
-    page_title="WY FBA Pro", 
+    page_title="WY FBA计算器", 
     page_icon="📦", 
     layout="centered"
 )
@@ -58,7 +58,7 @@ def get_tenant_access_token():
     except: return None
 
 # --- 2. 顶部标题区 ---
-st.title("📦 WY FBA 智能计算器")
+st.title("📦 WY FBA计算器")
 st.caption("快速判定尺寸等级、配送费及包装高度建议")
 
 # --- 3. 基础信息录入 ---
