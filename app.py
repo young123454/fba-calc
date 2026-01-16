@@ -144,7 +144,6 @@ final_max_h = min(1.9, max_h_calc) if is_small else max_h_calc
 # --- 6. 核心结果显示 (彩色卡片版) ---
 st.divider()
 st.subheader("💡 计算结论")
-st.info(f"当前计费标准：**{clean_price_tier}**") 
 
 # A. 置顶的最大高度建议 (绿色卡片样式)
 st.success(f"📌 **当前运费档位最大允许高度：{final_max_h:.2f} cm**")
