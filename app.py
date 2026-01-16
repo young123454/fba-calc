@@ -132,7 +132,7 @@ else: # 标准
     else:
         if bill_weight > 3.0:
             extra_units = math.ceil(max(0, bill_weight - 3.0) / 0.5)
-            fee, upper_weight = extra_units * 0.16 + 6.9, 3.0 + (extra_units * 0.5)
+            fee, upper_weight = extra_units * 0.16 + 6.97, 3.0 + (extra_units * 0.5)
         else:
             fees = [4.3, 4.5, 4.72, 5.17, 5.87, 6.04, 6.14, 6.25, 6.6, 6.72, 6.77, 6.9]
             idx = next((i for i, t in enumerate(thresholds_std) if bill_weight <= t), len(thresholds_std)-1)
