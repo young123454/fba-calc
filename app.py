@@ -27,6 +27,14 @@ st.title("📦 WY FBA工具")
 
 sku = st.text_input("请输入 SKU (选填)", placeholder="例如：SKU-2026-001")
 
+# 新增售价区间选择器
+price_tier = st.radio(
+    "选择商品售价区间",
+    ["<$10 (低价)", "$10-$50 (标准)", ">$50 (高价)"],
+    index=1,
+    horizontal=True
+)
+
 with st.container():
     col_w, col_l = st.columns(2)
     with col_w:
@@ -53,35 +61,63 @@ size_tier = "小号标准尺寸" if is_small else "大号标准尺寸"
 
 fee = 0.0
 upper_weight = 0.0
+thresholds_std = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+thresholds_small = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]
 
-if is_small:
-    thresholds = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]
-    fees = [3.51, 3.54, 3.59, 3.69, 3.91, 4.09, 4.20, 4.25]
-    idx = next((i for i, t in enumerate(thresholds) if bill_weight <= t), len(thresholds)-1)
-    fee = fees[idx]
-    upper_weight = thresholds[idx]
-else:
-    # 大号标准尺寸：大于 3 磅用公式，不保留 5 磅特殊值
-    if bill_weight > 3.0:
-        extra_units = math.ceil(max(0, bill_weight - 3.0) / 0.5)
-        fee = extra_units * 0.16 + 6.9 
-        upper_weight = 3.0 + (extra_units * 0.5)
+# --- 3.1 根据选择的售价区间匹配费率 ---
+if price_tier == "<$10 (低价)":
+    if is_small:
+        fees = [2.62, 2.64, 2.68, 2.81, 3.00, 3.10, 3.20, 3.30]
+        idx = next((i for i, t in enumerate(thresholds_small) if bill_weight <= t), len(thresholds_small)-1)
+        fee, upper_weight = fees[idx], thresholds_small[idx]
     else:
-        thresholds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
-        fees = [4.3, 4.5, 4.72, 5.17, 5.87, 6.04, 6.14, 6.25, 6.6, 6.72, 6.77, 6.9]
-        idx = next((i for i, t in enumerate(thresholds) if bill_weight <= t), len(thresholds)-1)
-        fee = fees[idx]
-        upper_weight = thresholds[idx]
+        if bill_weight > 3.0:
+            extra_units = math.ceil(max(0, bill_weight - 3.0) / 0.5)
+            fee = extra_units * 0.16 + 6.82 
+            upper_weight = 3.0 + (extra_units * 0.5)
+        else:
+            fees = [3.48, 3.68, 3.90, 4.35, 5.05, 5.22, 5.32, 5.43, 5.78, 5.90, 5.95, 6.08]
+            idx = next((i for i, t in enumerate(thresholds_std) if bill_weight <= t), len(thresholds_std)-1)
+            fee, upper_weight = fees[idx], thresholds_std[idx]
+
+elif price_tier == ">$50 (高价)":
+    if is_small:
+        fees = [3.77, 3.80, 3.85, 3.95, 4.17, 4.35, 4.46, 4.51]
+        idx = next((i for i, t in enumerate(thresholds_small) if bill_weight <= t), len(thresholds_small)-1)
+        fee, upper_weight = fees[idx], thresholds_small[idx]
+    else:
+        if bill_weight > 3.0:
+            extra_units = math.ceil(max(0, bill_weight - 3.0) / 0.5)
+            fee = extra_units * 0.16 + 7.63 
+            upper_weight = 3.0 + (extra_units * 0.5)
+        else:
+            fees = [4.56, 4.76, 4.98, 5.43, 6.13, 6.30, 6.40, 6.51, 6.86, 6.98, 7.03, 7.16]
+            idx = next((i for i, t in enumerate(thresholds_std) if bill_weight <= t), len(thresholds_std)-1)
+            fee, upper_weight = fees[idx], thresholds_std[idx]
+
+else: # $10-$50 (标准)
+    if is_small:
+        fees = [3.51, 3.54, 3.59, 3.69, 3.91, 4.09, 4.20, 4.25]
+        idx = next((i for i, t in enumerate(thresholds_small) if bill_weight <= t), len(thresholds_small)-1)
+        fee, upper_weight = fees[idx], thresholds_small[idx]
+    else:
+        if bill_weight > 3.0:
+            extra_units = math.ceil(max(0, bill_weight - 3.0) / 0.5)
+            fee = extra_units * 0.16 + 6.9 
+            upper_weight = 3.0 + (extra_units * 0.5)
+        else:
+            fees = [4.3, 4.5, 4.72, 5.17, 5.87, 6.04, 6.14, 6.25, 6.6, 6.72, 6.77, 6.9]
+            idx = next((i for i, t in enumerate(thresholds_std) if bill_weight <= t), len(thresholds_std)-1)
+            fee, upper_weight = fees[idx], thresholds_std[idx]
 
 # --- 4. 结论展示 ---
 st.divider()
 max_h_calc = (upper_weight * v_factor) / (l_cm * w_cm)
 final_max_h = min(1.9, max_h_calc) if is_small else max_h_calc
 
-# 绿色结论卡片
 st.markdown(f"""
 <div style="background-color:#d4edda; padding:15px; border-radius:10px; border-left:5px solid #28a745;">
-    <p style="color:#155724; margin:0; font-size:14px;">📏 当前运费档位最大允许高度：</p>
+    <p style="color:#155724; margin:0; font-size:14px;">📏 {price_tier} 最大允许高度：</p>
     <p style="color:#155724; margin:0; font-size:28px; font-weight:bold;">{final_max_h:.2f} cm</p>
 </div>
 """, unsafe_allow_html=True)
@@ -97,7 +133,7 @@ with col2:
 if st.button("💾 保存数据到飞书多维表", disabled=not sku):
     token = get_tenant_access_token()
     if not token:
-        st.error("获取飞書授权失败，请检查 Secrets 配置。")
+        st.error("获取授权失败，请检查 Secrets。")
     else:
         url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{APP_TOKEN}/tables/{TABLE_ID}/records"
         headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
@@ -109,7 +145,8 @@ if st.button("💾 保存数据到飞书多维表", disabled=not sku):
                 "最大高度(cm)": round(final_max_h, 2),
                 "当前重量(g)": weight_g,
                 "长度(cm)": l_cm,
-                "宽度(cm)": w_cm
+                "宽度(cm)": w_cm,
+                "售价区间": price_tier  # 保存新增字段
             }
         })
         response = requests.post(url, headers=headers, data=payload)
@@ -117,6 +154,6 @@ if st.button("💾 保存数据到飞书多维表", disabled=not sku):
             st.success("✅ 数据已保存！")
             st.balloons()
         else:
-            st.error(f"保存失败：{response.json().get('msg')}")
+            st.error(f"失败：{response.json().get('msg')}")
 elif not sku:
     st.warning("⚠️ 请输入 SKU 以激活保存功能。")
